@@ -1,0 +1,287 @@
+
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ちょうどいい割り勘計算アプリ</title>
+    <style>
+        /* --- 全体のデザイン（CSS） --- */
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            background-color: #fff;
+            max-width: 500px;
+            width: 100%;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            color: #2c3e50;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        input[type="number"], input[type="text"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        /* メンバーごとの入力行のデザイン */
+        .member-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .member-row input { flex: 2; }
+        .member-row select { flex: 1; }
+
+        /* 計算結果の表示エリア */
+        #result-area {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px dashed #ddd;
+        }
+
+        .result-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .result-item {
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 5px solid #3498db;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-name {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .result-amount {
+            font-size: 22px; /* デカデカと表示 */
+            font-weight: bold;
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>ちょうどいい割り勘計算アプリ</h1>
+
+    <div class="form-group">
+        <label for="total-amount">全体の合計金額 (円)</label>
+        <input type="number" id="total-amount" placeholder="例: 12000" min="0">
+    </div>
+
+    <div class="form-group">
+        <label for="total-people">全体の人数 (人)</label>
+        <input type="number" id="total-people" placeholder="例: 4" min="1" oninput="generateMemberInputs()">
+    </div>
+
+    <div class="form-group">
+        <div id="member-list-container"></div>
+    </div>
+
+    <button id="calc-btn" onclick="calculateBill()" style="display: none;">計算する</button>
+
+    <div id="result-area" style="display: none;">
+        <div class="result-title">💰 精算結果 💰</div>
+        <div id="result-list"></div>
+    </div>
+</div>
+
+<script>
+    // --- 処理の解説（JavaScript） ---
+
+    // 人数が入力されたら、その人数分の名前＆比率入力欄を画面に作り出す関数
+    function generateMemberInputs() {
+        const peopleCount = parseInt(document.getElementById('total-people').value);
+        const container = document.getElementById('member-list-container');
+        const calcBtn = document.getElementById('calc-btn');
+        
+        // 一旦中身を空っぽにする
+        container.innerHTML = '';
+        
+        // 人数が正しい値（1以上）じゃなければボタンを隠して終了
+        if (isNaN(peopleCount) || peopleCount < 1) {
+            calcBtn.style.display = 'none';
+            return;
+        }
+
+        // ラベルを追加
+        const label = document.createElement('label');
+        label.innerText = 'メンバーの名前と比率を設定してください';
+        container.appendChild(label);
+
+        // 人数分の入力項目（名前のテキスト欄 ＋ 比率のセレクトボックス）をループで生成
+        for (let i = 1; i <= peopleCount; i++) {
+            const row = document.createElement('div');
+            row.className = 'member-row';
+
+            // 名前の入力欄
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.placeholder = `メンバー ${i}`;
+            nameInput.className = 'member-name';
+            
+            // 比率の選択肢
+            const ratioSelect = document.createElement('select');
+            ratioSelect.className = 'member-ratio';
+            
+            // 選択肢の中身を定義（valueが計算に使われる倍率になります）
+            const options = [
+                { text: 'ふつうに払う人 (1.0倍)', value: 1.0 },
+                { text: '少なめに払う人 (0.8倍)', value: 0.8 },
+                { text: '少なめに払う人 (0.5倍)', value: 0.5 },
+                { text: '多めに払う人 (1.2倍)', value: 1.2 },
+                { text: '多めに払う人 (1.5倍)', value: 1.5 },
+                { text: '多めに払う人 (2.0倍)', value: 2.0 }
+            ];
+
+            // 選択肢をセレクトボックスに追加
+            options.forEach(opt => {
+                const option = document.createElement('option');
+                option.text = opt.text;
+                option.value = opt.value;
+                ratioSelect.appendChild(option);
+            });
+
+            // 行にドッキング
+            row.appendChild(nameInput);
+            row.appendChild(ratioSelect);
+            container.appendChild(row);
+        }
+
+        // 入力欄ができたら計算ボタンを表示する
+        calcBtn.style.display = 'block';
+    }
+
+    // 割り勘の具体的な金額を計算するメインの関数
+    function calculateBill() {
+        const totalAmount = parseInt(document.getElementById('total-amount').value);
+        const nameInputs = document.querySelectorAll('.member-name');
+        const ratioSelects = document.querySelectorAll('.member-ratio');
+        
+        // バリデーション（金額が空などのエラーチェック）
+        if (isNaN(totalAmount) || totalAmount <= 0) {
+            alert('有効な合計金額を入力してください。');
+            return;
+        }
+
+        // 1. 全員の比率（重み）の合計値を割り出す
+        let totalRatio = 0;
+        ratioSelects.forEach(select => {
+            totalRatio += parseFloat(select.value);
+        });
+
+        // 2. 「比率1.0（ふつう）」あたりの基準となる金額を計算する
+        const baseAmount = totalAmount / totalRatio;
+
+        let calculatedTotal = 0;
+        const results = [];
+
+        // 3. 各自の仮の支払額を計算（10円単位で切り上げ）
+        nameInputs.forEach((input, index) => {
+            const name = input.value.trim() || `メンバー ${index + 1}`;
+            const ratio = parseFloat(ratioSelects[index].value);
+            
+            // 基準金額にそれぞれの比率を掛け算し、10円単位で切り上げる
+            // 例: 2345円 → Math.ceil(234.5) * 10 = 2350円
+            let amount = Math.ceil((baseAmount * ratio) / 10) * 10;
+            
+            calculatedTotal += amount;
+            
+            results.push({ name: name, amount: amount });
+        });
+
+        // 4. 端数調整（切り上げによって発生した実際の合計金額との「ズレ」を調整）
+        // 10円単位での切り上げなので、大抵は数十円〜数百円ほど多く計算されます。
+        let diff = calculatedTotal - totalAmount;
+        
+        // ズレ（余り）がある場合は、最初のメンバーから順に10円ずつ引いて調整する
+        let i = 0;
+        while (diff > 0) {
+            results[i % results.length].amount -= 10;
+            diff -= 10;
+            i++;
+        }
+
+        // 5. 計算結果を画面にデカデカと表示する
+        const resultList = document.getElementById('result-list');
+        resultList.innerHTML = ''; // 前回の結果をクリア
+
+        results.forEach(res => {
+            const div = document.createElement('div');
+            div.className = 'result-item';
+            div.innerHTML = `
+                <span class="result-name">${res.name}</span>
+                <span class="result-amount">${res.amount.toLocaleString()} 円</span>
+            `;
+            resultList.appendChild(div);
+        });
+
+        // 結果エリアを隠し状態から表示状態にする
+        document.getElementById('result-area').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
+
