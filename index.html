@@ -1,130 +1,207 @@
-
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ちょうどいい割り勘計算アプリ</title>
+    <!-- 丸みのある可愛い日本語フォント（M PLUS Rounded 1c）を読み込み -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
+    
     <style>
-        /* --- 全体のデザイン（CSS） --- */
-        body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            background-color: #f4f7f6;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
+        /* --- 全体の基本スタイル（CSS） --- */
+        * {
+            box-sizing: border-box;
         }
 
-        .container {
-            background-color: #fff;
-            max-width: 500px;
+        body {
+            font-family: 'M PLUS Rounded 1c', 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 20px 10px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            color: #4a4a4a;
+            position: relative;
+            overflow-x: hidden;
+            /* 夜空を感じさせるグラデーション背景 */
+            background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 50%, #2b1e3a 100%);
+        }
+
+        /* --- 流れ星（キャンバス）背景 --- */
+        #star-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            height: 100%;
+            pointer-events: none; /* 下の要素の操作を邪魔しない */
+            z-index: 0;
+        }
+
+        /* アプリ本体のコンテナ */
+        .container {
+            position: relative;
+            z-index: 1; /* 流れ星の上に表示 */
+            background-color: rgba(255, 255, 255, 0.93); /* 少し透け感を出して幻想的に */
+            backdrop-filter: blur(8px);
+            max-width: 520px;
+            width: 100%;
+            padding: 35px 28px;
+            border-radius: 20px;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3), 0 0 20px rgba(168, 192, 255, 0.2);
+            margin: 20px 0;
+            border: 2px solid rgba(255, 255, 255, 0.8);
         }
 
         h1 {
             text-align: center;
-            font-size: 24px;
-            color: #2c3e50;
+            font-size: 26px;
+            font-weight: 800;
+            color: #3b3a5c;
+            margin-top: 0;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        /* タイトル下の説明文 */
+        .app-description {
+            font-size: 13.5px;
+            line-height: 1.6;
+            color: #6b6a8a;
+            text-align: center;
+            background-color: #f0f3fa;
+            padding: 12px 16px;
+            border-radius: 12px;
             margin-bottom: 25px;
+            font-weight: 400;
+            border: 1px dashed #c0cae8;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 22px;
         }
 
         label {
             display: block;
             margin-bottom: 8px;
-            font-weight: bold;
+            font-weight: 700;
             font-size: 14px;
+            color: #4a4870;
         }
 
         input[type="number"], input[type="text"], select {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
+            padding: 12px 14px;
+            border: 2px solid #e1e6f0;
+            border-radius: 10px;
             box-sizing: border-box;
-            font-size: 16px;
+            font-size: 15px;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            background-color: #fbfcfd;
+            transition: all 0.25s ease;
+            outline: none;
+            color: #333;
         }
 
+        input[type="number"]:focus, input[type="text"]:focus, select:focus {
+            border-color: #7b88ff;
+            box-shadow: 0 0 8px rgba(123, 136, 255, 0.3);
+            background-color: #fff;
+        }
+
+        /* ボタンデザイン */
         button {
             width: 100%;
-            padding: 12px;
-            background-color: #3498db;
+            padding: 14px;
+            background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
             color: white;
             border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: bold;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 700;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: transform 0.2s, box-shadow 0.2s;
             margin-top: 10px;
+            box-shadow: 0 6px 18px rgba(108, 92, 231, 0.35);
         }
 
         button:hover {
-            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 22px rgba(108, 92, 231, 0.45);
+        }
+
+        button:active {
+            transform: translateY(0);
         }
 
         /* メンバーごとの入力行のデザイン */
         .member-row {
             display: flex;
             gap: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             align-items: center;
         }
         .member-row input { flex: 2; }
-        .member-row select { flex: 1; }
+        .member-row select { flex: 1.3; }
 
         /* 計算結果の表示エリア */
         #result-area {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 2px dashed #ddd;
+            margin-top: 32px;
+            padding-top: 22px;
+            border-top: 2px dashed #d6dcee;
         }
 
         .result-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 15px;
+            font-size: 19px;
+            font-weight: 800;
+            color: #3b3a5c;
+            margin-bottom: 18px;
             text-align: center;
         }
 
         .result-item {
-            background-color: #f8f9fa;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            border-left: 5px solid #3498db;
+            background: linear-gradient(135deg, #ffffff 0%, #f4f6fd 100%);
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            border-left: 6px solid #6c5ce7;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.04);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
         .result-name {
-            font-weight: bold;
+            font-weight: 700;
             font-size: 16px;
+            color: #4a4870;
         }
 
         .result-amount {
-            font-size: 22px; /* デカデカと表示 */
-            font-weight: bold;
-            color: #e74c3c;
+            font-size: 24px; /* デカデカと表示 */
+            font-weight: 800;
+            color: #ff5e7e;
         }
     </style>
 </head>
 <body>
 
+<!-- 流れ星と星空を描画する背景キャンバス -->
+<canvas id="star-canvas"></canvas>
+
 <div class="container">
     <h1>ちょうどいい割り勘計算アプリ</h1>
+    
+    <!-- 指定いただいた説明文 -->
+    <div class="app-description">
+        先輩だから多めに払いたい／遅刻した人に少なめに払わせたい…人によって多め・少なめ設定が使える割り勘計算アプリです。
+    </div>
 
+    <!-- ステップ1: 基本情報の入力 -->
     <div class="form-group">
         <label for="total-amount">全体の合計金額 (円)</label>
         <input type="number" id="total-amount" placeholder="例: 12000" min="0">
@@ -135,14 +212,16 @@
         <input type="number" id="total-people" placeholder="例: 4" min="1" oninput="generateMemberInputs()">
     </div>
 
+    <!-- ステップ2: メンバーごとの設定（人数に応じてJavaScriptが自動生成） -->
     <div class="form-group">
         <div id="member-list-container"></div>
     </div>
 
     <button id="calc-btn" onclick="calculateBill()" style="display: none;">計算する</button>
 
+    <!-- ステップ3: 結果表示エリア -->
     <div id="result-area" style="display: none;">
-        <div class="result-title">💰 精算結果 💰</div>
+        <div class="result-title">✨ 精算結果 ✨</div>
         <div id="result-list"></div>
     </div>
 </div>
@@ -280,6 +359,130 @@
         // 結果エリアを隠し状態から表示状態にする
         document.getElementById('result-area').style.display = 'block';
     }
+
+
+    // --- 流れ星＆星空のアニメーション処理（HTML5 Canvas） ---
+    const canvas = document.getElementById('star-canvas');
+    const ctx = canvas.getContext('2d');
+
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+
+    window.addEventListener('resize', () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+    });
+
+    // 背景のキラキラした小さな星たちのデータ生成
+    const backgroundStars = [];
+    for (let i = 0; i < 70; i++) {
+        backgroundStars.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            radius: Math.random() * 1.5,
+            alpha: Math.random(),
+            speed: Math.random() * 0.02 + 0.005
+        });
+    }
+
+    // 流れ星クラス
+    class ShootingStar {
+        constructor() {
+            this.reset();
+        }
+
+        reset() {
+            this.x = Math.random() * width * 1.2;
+            this.y = -20;
+            this.length = Math.random() * 80 + 60;
+            this.speed = Math.random() * 10 + 6;
+            this.size = Math.random() * 1.5 + 1;
+            // 綺麗なパステルグラデーション系の流れ星カラー
+            const colors = ['#ffffff', '#a29bfe', '#74b9ff', '#ffeaa7', '#ff7675'];
+            this.color = colors[Math.floor(Math.random() * colors.length)];
+            this.active = false;
+            this.wait = Math.random() * 120 + 20; // 流れるタイミングのズレ
+        }
+
+        update() {
+            if (!this.active) {
+                this.wait--;
+                if (this.wait <= 0) {
+                    this.active = true;
+                }
+                return;
+            }
+
+            // 斜め右下に流れる
+            this.x -= this.speed * 1.2;
+            this.y += this.speed;
+
+            // 画面外に出たらリセット
+            if (this.y > height + 100 || this.x < -100) {
+                this.reset();
+            }
+        }
+
+        draw() {
+            if (!this.active) return;
+
+            // 流れ星の尾を描画（グラデーション）
+            const tailX = this.x + this.length * 1.2;
+            const tailY = this.y - this.length;
+
+            const gradient = ctx.createLinearGradient(this.x, this.y, tailX, tailY);
+            gradient.addColorStop(0, this.color);
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y);
+            ctx.lineTo(tailX, tailY);
+            ctx.strokeStyle = gradient;
+            ctx.lineWidth = this.size;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // 先端の光る点
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size * 1.2, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = this.color;
+            ctx.fill();
+            ctx.shadowBlur = 0; // リセット
+        }
+    }
+
+    // 流れ星を複数作成
+    const shootingStars = Array.from({ length: 4 }, () => new ShootingStar());
+
+    // 毎フレームのアニメーション描画ループ
+    function animate() {
+        ctx.clearRect(0, 0, width, height);
+
+        // 1. 背景の星のチラつき描画
+        backgroundStars.forEach(star => {
+            star.alpha += star.speed;
+            if (star.alpha > 1 || star.alpha < 0) {
+                star.speed = -star.speed;
+            }
+            ctx.beginPath();
+            ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 255, 255, ${Math.abs(star.alpha)})`;
+            ctx.fill();
+        });
+
+        // 2. 流れ星の描画と更新
+        shootingStars.forEach(star => {
+            star.update();
+            star.draw();
+        });
+
+        requestAnimationFrame(animate);
+    }
+
+    // アニメーションスタート
+    animate();
 </script>
 
 </body>
